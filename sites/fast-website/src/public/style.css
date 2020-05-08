@@ -31,9 +31,10 @@ body {
 
 .section-component {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: center;
-  height: 600px;
+  /* height: 600px; */
   background-color: #3A3A3A;
 }
 
