@@ -1,0 +1,54 @@
+# This workflow integrates ShiftLeft Scan with GitHub's code scanning feature
+# ShiftLeft Scan is a free open-source security tool for modern DevOps teams
+# Visit https://slscan.io/en/latest/integrations/github-actions/ for help
+name: ShiftLeft Scan
+
+# This section configures the trigger for the workflow. Feel free to customize depending on your convention
+on:
+  push:
+    branches:
+      - master
+      - feature/*
+      - epic/*
+      - fix/*
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  Scan-Build:
+    # Scan runs on ubuntu, mac and windows
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v1
+    - name: Add or Update packages
+      run: sudo yarn global add lerna@3.18.2
+
+    - name: Get yarn cache directory path
+      id: yarn-cache-dir-path
+      run: echo '::set-output name=dir::$(yarn cache dir)'
+
+    - name: Set up node_modules cache
+      uses: actions/cache@v1.1.2
+      id: yarn-cache
+      with:
+        path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
+        key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-yarn-
+    - name: Install package dependencies / prepare workspaces
+      run: yarn install --frozen-lockfile
+
+    - name: Perform ShiftLeft Scan
+      uses: ShiftLeftSecurity/scan-action@master
+      env:
+        WORKSPACE: ""
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        output: reports
+        type: credscan,nodejs,depscan
+
+    - name: Upload report
+      uses: github/codeql-action/upload-sarif@v1
+      with:
+        sarif_file: reports
